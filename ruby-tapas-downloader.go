@@ -2,32 +2,28 @@ package main
 
 import (
 	"encoding/xml"
+	"flag"
+	"github.com/chrisdambrosio/sanitize"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
-type Channel struct {
-	XMLName xml.Name `xml:"rss"`
-	Title   string   `xml:"channel>title"`
-	Items   []Item   `xml:"channel>item"`
+type Feed struct {
+	XMLName  xml.Name  `xml:"rss"`
+	Title    string    `xml:"channel>title"`
+	Episodes []Episode `xml:"channel>item"`
 }
 
-type Item struct {
-	Title     string    `xml:"title"`
-	Enclosure Enclosure `xml:"enclosure"`
+type Episode struct {
+	Title       string      `xml:"title"`
+	EpisodeFile EpisodeFile `xml:"enclosure"`
 }
 
-type Enclosure struct {
+type EpisodeFile struct {
 	Url string `xml:"url,attr"`
-}
-
-func (e Enclosure) Filename() string {
-	tokens := strings.Split(e.Url, "/")
-	return tokens[len(tokens)-1]
 }
 
 type Client struct {
@@ -63,44 +59,52 @@ func (client Client) fetchFeed() []byte {
 	return rss
 }
 
-func (client Client) downloadFile(item Item) {
-	fileUrl := item.Enclosure.Url
-	filename := item.Enclosure.Filename()
-
-	out, err := os.Create(filename)
+func (client Client) downloadFile(url, target string) {
+	out, err := os.Create(target)
 	defer out.Close()
 
 	if err != nil {
-		log.Println("Error: error copying file ", filename, " - ", err)
+		log.Println("Error: error copying file", target, "-", err)
 	}
 
-	resp, err := client.Get(fileUrl)
+	resp, err := client.Get(url)
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Println("Error: failed to fetch file", fileUrl, " - ", err)
+		log.Println("Error: failed to fetch file", url, "-", err)
 	}
 
 	_, err = io.Copy(out, resp.Body)
 
 	if err != nil {
-		log.Fatal("Error: ", err)
+		log.Fatal("Error:", err)
 	}
 
-	log.Println("Downloaded: ", fileUrl)
+	log.Println("Downloaded:", url)
 }
 
 func main() {
-	username := "username"
-	password := "password"
+	var username = flag.String("u", "", "login username")
+	var password = flag.String("p", "", "login password")
+	flag.Parse()
+
 	url := "https://rubytapas.dpdcart.com/feed"
 
-	client := Client{username: username, password: password, feedUrl: url}
+	client := Client{username: *username, password: *password, feedUrl: url}
 
 	rss := client.fetchFeed()
 
-	var c Channel
-	xml.Unmarshal(rss, &c)
+	var feed Feed
+	xml.Unmarshal(rss, &feed)
 
-	client.downloadFile(c.Items[0])
+	for _, episode := range feed.Episodes {
+		filename := sanitize.BaseName(episode.Title) + ".mp4"
+
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			log.Printf("Downloading file: %s", filename)
+			client.downloadFile(episode.EpisodeFile.Url, filename)
+		} else {
+			log.Printf("File found, skipping: %s", filename)
+		}
+	}
 }
