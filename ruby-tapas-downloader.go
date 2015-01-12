@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 )
 
 type Feed struct {
@@ -89,6 +90,7 @@ func (client Client) downloadFile(url, target string) {
 func main() {
 	var username = flag.String("u", "", "login username")
 	var password = flag.String("p", "", "login password")
+	var dir = flag.String("d", "", "target directory")
 	flag.Parse()
 
 	url := "https://rubytapas.dpdcart.com/feed"
@@ -105,7 +107,7 @@ func main() {
 
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
 			log.Printf("Downloading file: %s", filename)
-			client.downloadFile(episode.EpisodeFile.Url, filename)
+			client.downloadFile(episode.EpisodeFile.Url, path.Join(*dir, filename))
 		} else {
 			log.Printf("File found, skipping: %s", filename)
 		}
