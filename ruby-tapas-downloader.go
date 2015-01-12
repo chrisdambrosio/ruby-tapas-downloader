@@ -60,7 +60,8 @@ func (client Client) fetchFeed() []byte {
 }
 
 func (client Client) downloadFile(url, target string) {
-	out, err := os.Create(target)
+	tmpFile := target + ".part"
+	out, err := os.Create(tmpFile)
 	defer out.Close()
 
 	if err != nil {
@@ -79,6 +80,8 @@ func (client Client) downloadFile(url, target string) {
 	if err != nil {
 		log.Fatal("Error:", err)
 	}
+
+	os.Rename(tmpFile, target)
 
 	log.Println("Downloaded:", url)
 }
