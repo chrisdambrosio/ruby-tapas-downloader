@@ -21,6 +21,7 @@ type Feed struct {
 type Episode struct {
 	Title       string      `xml:"title"`
 	EpisodeFile EpisodeFile `xml:"enclosure"`
+	Description string      `xml:"description"`
 }
 
 type EpisodeFile struct {
