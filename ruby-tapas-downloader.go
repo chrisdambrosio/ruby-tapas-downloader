@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"encoding/xml"
 	"flag"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/chrisdambrosio/sanitize"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"path"
 )
@@ -19,29 +23,54 @@ type Feed struct {
 }
 
 type Episode struct {
-	Title       string      `xml:"title"`
-	EpisodeFile EpisodeFile `xml:"enclosure"`
-	Description string      `xml:"description"`
+	Title       string `xml:"title"`
+	Description []byte `xml:"description"`
+}
+
+func (e Episode) Files() []EpisodeFile {
+	reader := bytes.NewReader(e.Description)
+	doc, err := goquery.NewDocumentFromReader(reader)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var files []EpisodeFile
+
+	doc.Find("h3:contains('Attached Files')").
+		NextFiltered("ul").Find("li a").Each(
+		func(i int, s *goquery.Selection) {
+			name := s.Text()
+			url, _ := s.Attr("href")
+			files = append(files, EpisodeFile{Url: url, Name: name})
+		})
+	return files
 }
 
 type EpisodeFile struct {
-	Url string `xml:"url,attr"`
+	Url  string
+	Name string
 }
 
 type Client struct {
-	username string
-	password string
-	feedUrl  string
+	username   string
+	password   string
+	feedUrl    string
+	httpClient *http.Client
 }
 
 func (c Client) Get(url string) (*http.Response, error) {
-	client := &http.Client{}
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(c.username, c.password)
 
-	resp, err := client.Do(req)
+	resp, err := c.httpClient.Do(req)
 
 	return resp, err
+}
+
+func (c Client) Login() {
+	c.httpClient.PostForm("https://rubytapas.dpdcart.com/subscriber/login",
+		url.Values{"username": {c.username}, "password": {c.password}})
 }
 
 func (client Client) fetchFeed() []byte {
@@ -96,7 +125,9 @@ func main() {
 
 	url := "https://rubytapas.dpdcart.com/feed"
 
-	client := Client{username: *username, password: *password, feedUrl: url}
+	cookieJar, _ := cookiejar.New(nil)
+	client := &Client{username: *username, password: *password, feedUrl: url, httpClient: &http.Client{Jar: cookieJar}}
+	client.Login()
 
 	rss := client.fetchFeed()
 
@@ -104,13 +135,25 @@ func main() {
 	xml.Unmarshal(rss, &feed)
 
 	for _, episode := range feed.Episodes {
-		filename := sanitize.BaseName(episode.Title) + ".mp4"
+		episodeDir := path.Join(*dir, sanitize.BaseName(episode.Title))
 
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
-			log.Printf("Downloading file: %s", filename)
-			client.downloadFile(episode.EpisodeFile.Url, path.Join(*dir, filename))
-		} else {
-			log.Printf("File found, skipping: %s", filename)
+		if _, err := os.Stat(episodeDir); os.IsNotExist(err) {
+			err = os.Mkdir(episodeDir, 0755)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		for _, file := range episode.Files() {
+			filepath := path.Join(episodeDir, file.Name)
+
+			if _, err := os.Stat(filepath); os.IsNotExist(err) {
+				log.Printf("Downloading file: %s", filepath)
+				client.downloadFile(file.Url, filepath)
+			} else {
+				log.Printf("File found, skipping: %s", filepath)
+			}
 		}
 	}
 }
