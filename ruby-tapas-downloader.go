@@ -59,6 +59,15 @@ type Client struct {
 	httpClient *http.Client
 }
 
+func NewClient() *Client {
+	cookieJar, _ := cookiejar.New(nil)
+	client := &Client{
+		feedUrl:    FeedUrl,
+		httpClient: &http.Client{Jar: cookieJar},
+	}
+	return client
+}
+
 func (c Client) Get(url string) (*http.Response, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(c.username, c.password)
@@ -117,16 +126,20 @@ func (client Client) downloadFile(url, target string) {
 	log.Println("Downloaded:", url)
 }
 
+const (
+	FeedUrl = "https://rubytapas.dpdcart.com/feed"
+)
+
 func main() {
 	var username = flag.String("u", "", "login username")
 	var password = flag.String("p", "", "login password")
 	var dir = flag.String("d", "", "target directory")
 	flag.Parse()
 
-	url := "https://rubytapas.dpdcart.com/feed"
+	client := NewClient()
+	client.username = *username
+	client.password = *password
 
-	cookieJar, _ := cookiejar.New(nil)
-	client := &Client{username: *username, password: *password, feedUrl: url, httpClient: &http.Client{Jar: cookieJar}}
 	client.Login()
 
 	rss := client.fetchFeed()
