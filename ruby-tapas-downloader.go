@@ -59,9 +59,11 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func NewClient() *Client {
+func NewClient(username, password string) *Client {
 	cookieJar, _ := cookiejar.New(nil)
 	client := &Client{
+		username:   username,
+		password:   password,
 		feedUrl:    FeedUrl,
 		httpClient: &http.Client{Jar: cookieJar},
 	}
@@ -136,9 +138,7 @@ func main() {
 	var dir = flag.String("d", "", "target directory")
 	flag.Parse()
 
-	client := NewClient()
-	client.username = *username
-	client.password = *password
+	client := NewClient(*username, *password)
 
 	client.Login()
 
