@@ -80,8 +80,12 @@ func (c Client) Get(url string) (*http.Response, error) {
 }
 
 func (c Client) Login() {
-	c.httpClient.PostForm("https://rubytapas.dpdcart.com/subscriber/login",
-		url.Values{"username": {c.username}, "password": {c.password}})
+	c.httpClient.PostForm(LoginUrl,
+		url.Values{
+			"username": {c.username},
+			"password": {c.password},
+		},
+	)
 }
 
 func (client Client) fetchFeed() []byte {
@@ -129,7 +133,8 @@ func (client Client) downloadFile(url, target string) {
 }
 
 const (
-	FeedUrl = "https://rubytapas.dpdcart.com/feed"
+	FeedUrl  = "https://rubytapas.dpdcart.com/feed"
+	LoginUrl = "https://rubytapas.dpdcart.com/subscriber/login"
 )
 
 func main() {
