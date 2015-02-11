@@ -53,7 +53,7 @@ type EpisodeFile struct {
 }
 
 type Client struct {
-	username   string
+	Username   string
 	password   string
 	feedUrl    string
 	httpClient *http.Client
@@ -62,7 +62,7 @@ type Client struct {
 func NewClient(username, password string) *Client {
 	cookieJar, _ := cookiejar.New(nil)
 	client := &Client{
-		username:   username,
+		Username:   username,
 		password:   password,
 		feedUrl:    FeedUrl,
 		httpClient: &http.Client{Jar: cookieJar},
@@ -72,7 +72,7 @@ func NewClient(username, password string) *Client {
 
 func (c Client) Get(url string) (*http.Response, error) {
 	req, _ := http.NewRequest("GET", url, nil)
-	req.SetBasicAuth(c.username, c.password)
+	req.SetBasicAuth(c.Username, c.password)
 
 	resp, err := c.httpClient.Do(req)
 
@@ -82,7 +82,7 @@ func (c Client) Get(url string) (*http.Response, error) {
 func (c Client) Login() {
 	c.httpClient.PostForm(LoginUrl,
 		url.Values{
-			"username": {c.username},
+			"username": {c.Username},
 			"password": {c.password},
 		},
 	)
