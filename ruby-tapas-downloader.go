@@ -55,7 +55,7 @@ type EpisodeFile struct {
 type Client struct {
 	Username   string
 	Password   string
-	feedUrl    string
+	FeedUrl    string
 	httpClient *http.Client
 }
 
@@ -64,7 +64,7 @@ func NewClient(username, password string) *Client {
 	client := &Client{
 		Username:   username,
 		Password:   password,
-		feedUrl:    FeedUrl,
+		FeedUrl:    FeedUrl,
 		httpClient: &http.Client{Jar: cookieJar},
 	}
 	return client
@@ -89,7 +89,7 @@ func (c Client) Login() {
 }
 
 func (client Client) fetchFeed() []byte {
-	resp, err := client.Get(client.feedUrl)
+	resp, err := client.Get(client.FeedUrl)
 	defer resp.Body.Close()
 
 	if err != nil {
