@@ -56,7 +56,7 @@ type Client struct {
 	Username   string
 	Password   string
 	FeedUrl    string
-	httpClient *http.Client
+	HttpClient *http.Client
 }
 
 func NewClient(username, password string) *Client {
@@ -65,7 +65,7 @@ func NewClient(username, password string) *Client {
 		Username:   username,
 		Password:   password,
 		FeedUrl:    FeedUrl,
-		httpClient: &http.Client{Jar: cookieJar},
+		HttpClient: &http.Client{Jar: cookieJar},
 	}
 	return client
 }
@@ -74,13 +74,13 @@ func (c Client) Get(url string) (*http.Response, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(c.Username, c.Password)
 
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.HttpClient.Do(req)
 
 	return resp, err
 }
 
 func (c Client) Login() {
-	c.httpClient.PostForm(LoginUrl,
+	c.HttpClient.PostForm(LoginUrl,
 		url.Values{
 			"username": {c.Username},
 			"password": {c.Password},
