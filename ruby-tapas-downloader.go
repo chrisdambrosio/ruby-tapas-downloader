@@ -59,18 +59,16 @@ type Client struct {
 	HttpClient *http.Client
 }
 
-func NewClient(username, password string) *Client {
+func NewClient() *Client {
 	cookieJar, _ := cookiejar.New(nil)
 	client := &Client{
-		Username:   username,
-		Password:   password,
 		FeedUrl:    FeedUrl,
 		HttpClient: &http.Client{Jar: cookieJar},
 	}
 	return client
 }
 
-func (c Client) Get(url string) (*http.Response, error) {
+func (c *Client) Get(url string) (*http.Response, error) {
 	req, _ := http.NewRequest("GET", url, nil)
 	req.SetBasicAuth(c.Username, c.Password)
 
@@ -79,13 +77,15 @@ func (c Client) Get(url string) (*http.Response, error) {
 	return resp, err
 }
 
-func (c Client) Login() {
+func (c *Client) Login(username, password string) {
 	c.HttpClient.PostForm(LoginUrl,
 		url.Values{
-			"username": {c.Username},
-			"password": {c.Password},
+			"username": {username},
+			"password": {password},
 		},
 	)
+	c.Username = username
+	c.Password = password
 }
 
 func (client Client) fetchFeed() []byte {
@@ -143,9 +143,9 @@ func main() {
 	var dir = flag.String("d", "", "target directory")
 	flag.Parse()
 
-	client := NewClient(*username, *password)
+	client := NewClient()
 
-	client.Login()
+	client.Login(*username, *password)
 
 	rss := client.fetchFeed()
 
