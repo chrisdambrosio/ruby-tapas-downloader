@@ -46,7 +46,7 @@ func (c *Client) Login(username, password string) {
 	c.Password = password
 }
 
-func (c *Client) fetchFeed() []byte {
+func (c *Client) FetchFeed() []byte {
 	resp, err := c.Get(c.FeedUrl)
 	defer resp.Body.Close()
 
@@ -63,7 +63,7 @@ func (c *Client) fetchFeed() []byte {
 	return rss
 }
 
-func (c *Client) downloadFile(url, target string) {
+func (c *Client) DownloadFile(url, target string) {
 	tmpFile := target + ".part"
 	out, err := os.Create(tmpFile)
 	defer out.Close()

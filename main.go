@@ -24,7 +24,7 @@ func main() {
 
 	client.Login(*username, *password)
 
-	rss := client.fetchFeed()
+	rss := client.FetchFeed()
 
 	var feed Feed
 	xml.Unmarshal(rss, &feed)
@@ -45,7 +45,7 @@ func main() {
 
 			if _, err := os.Stat(filepath); os.IsNotExist(err) {
 				log.Printf("Downloading file: %s", filepath)
-				client.downloadFile(file.Url, filepath)
+				client.DownloadFile(file.Url, filepath)
 			} else {
 				log.Printf("File found, skipping: %s", filepath)
 			}
