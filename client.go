@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -51,13 +50,14 @@ func (c *Client) FetchFeed() []byte {
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Fatal("Error: failed to fetch feed - ", err)
+		logger.Fatal("Error: failed to fetch feed: " + err.Error())
+		os.Exit(1)
 	}
 
 	rss, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		log.Fatal("Error: while reading feed - ", err)
+		logger.Fatal("Error while reading feed: " + err.Error())
 	}
 
 	return rss
@@ -69,23 +69,26 @@ func (c *Client) DownloadFile(url, target string) {
 	defer out.Close()
 
 	if err != nil {
-		log.Println("Error: error copying file", target, "-", err)
+		logger.Error("Error creating file " + target + ": " + err.Error())
+		return
 	}
 
 	resp, err := c.Get(url)
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Println("Error: failed to fetch file", url, "-", err)
+		logger.Error("Error fetching file" + url + ": " + err.Error())
+		return
 	}
 
 	_, err = io.Copy(out, resp.Body)
 
 	if err != nil {
-		log.Fatal("Error:", err)
+		logger.Error("Error copying file: " + err.Error())
+		return
 	}
 
 	os.Rename(tmpFile, target)
 
-	log.Println("Downloaded:", url)
+	logger.Debug("Download Complete: " + target + " from " + url)
 }

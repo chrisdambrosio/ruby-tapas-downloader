@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"github.com/PuerkitoBio/goquery"
-	"log"
+	"os"
 )
 
 type Feed struct {
@@ -23,7 +23,8 @@ func (e Episode) Files() []EpisodeFile {
 	doc, err := goquery.NewDocumentFromReader(reader)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("Could not parse episode files: " + err.Error())
+		os.Exit(1)
 	}
 
 	var files []EpisodeFile

@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"github.com/chrisdambrosio/sanitize"
-	"log"
+	"github.com/jcelliott/lumber"
 	"os"
 	"path"
 )
@@ -14,11 +14,18 @@ const (
 	LoginUrl = "https://rubytapas.dpdcart.com/subscriber/login"
 )
 
+var (
+	logger *lumber.MultiLogger
+)
+
 func main() {
 	var username = flag.String("u", "", "login username")
 	var password = flag.String("p", "", "login password")
 	var dir = flag.String("d", "", "target directory")
 	flag.Parse()
+
+	logger = lumber.NewMultiLogger()
+	logger.AddLoggers(lumber.NewConsoleLogger(lumber.INFO))
 
 	client := NewClient()
 
@@ -30,24 +37,26 @@ func main() {
 	xml.Unmarshal(rss, &feed)
 
 	for _, episode := range feed.Episodes {
-		episodeDir := path.Join(*dir, sanitize.BaseName(episode.Title))
+		episodeDir := sanitize.BaseName(episode.Title)
+		episodePath := path.Join(*dir, episodeDir)
 
-		if _, err := os.Stat(episodeDir); os.IsNotExist(err) {
-			err = os.Mkdir(episodeDir, 0755)
+		if _, err := os.Stat(episodePath); os.IsNotExist(err) {
+			err = os.Mkdir(episodePath, 0755)
 
 			if err != nil {
-				log.Fatal(err)
+				logger.Fatal(err.Error())
+				os.Exit(1)
 			}
 		}
 
 		for _, file := range episode.Files() {
-			filepath := path.Join(episodeDir, file.Name)
+			filepath := path.Join(episodePath, file.Name)
 
 			if _, err := os.Stat(filepath); os.IsNotExist(err) {
-				log.Printf("Downloading file: %s", filepath)
+				logger.Info("Downloading file: %s", path.Join(episodeDir, file.Name))
 				client.DownloadFile(file.Url, filepath)
 			} else {
-				log.Printf("File found, skipping: %s", filepath)
+				logger.Debug("File found, skipping: %s", path.Join(episodeDir, file.Name))
 			}
 		}
 	}
