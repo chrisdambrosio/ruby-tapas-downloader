@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -35,12 +37,28 @@ func (c *Client) Get(url string) (*http.Response, error) {
 }
 
 func (c *Client) Login(username, password string) {
-	c.HttpClient.PostForm(LoginUrl,
+	resp, err := c.HttpClient.PostForm(LoginUrl,
 		url.Values{
 			"username": {username},
 			"password": {password},
 		},
 	)
+
+	if err != nil {
+		logger.Fatal("Error while logging in: " + err.Error())
+		os.Exit(1)
+	}
+
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	reader := bytes.NewReader(body)
+	doc, err := goquery.NewDocumentFromReader(reader)
+	selection := doc.Find("form#login-form")
+	if selection.Length() > 0 {
+		logger.Fatal("Login failed")
+		os.Exit(1)
+	}
+
 	c.Username = username
 	c.Password = password
 }
