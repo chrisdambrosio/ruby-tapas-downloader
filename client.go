@@ -46,8 +46,8 @@ func (c *Client) Login(username, password string) {
 	c.Password = password
 }
 
-func (client Client) fetchFeed() []byte {
-	resp, err := client.Get(client.FeedUrl)
+func (c *Client) fetchFeed() []byte {
+	resp, err := c.Get(c.FeedUrl)
 	defer resp.Body.Close()
 
 	if err != nil {
@@ -63,7 +63,7 @@ func (client Client) fetchFeed() []byte {
 	return rss
 }
 
-func (client Client) downloadFile(url, target string) {
+func (c *Client) downloadFile(url, target string) {
 	tmpFile := target + ".part"
 	out, err := os.Create(tmpFile)
 	defer out.Close()
@@ -72,7 +72,7 @@ func (client Client) downloadFile(url, target string) {
 		log.Println("Error: error copying file", target, "-", err)
 	}
 
-	resp, err := client.Get(url)
+	resp, err := c.Get(url)
 	defer resp.Body.Close()
 
 	if err != nil {
